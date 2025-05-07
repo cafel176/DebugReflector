@@ -60,6 +60,7 @@ DebugReflector.param = PluginManager.parameters('DebugReflector');
 // ============================================================================= //
 
 // 调试按键
+Input.keyMapper[27] = "ESC";
 Input.keyMapper[114] = "reflector";
 Input.keyMapper[115] = "filter";
 
@@ -161,16 +162,21 @@ var DebugReflector_LimitBounds = function (bounds) {
 }
 
 const DebugReflector_Priority = {
+    // 其他
     "DebugReflector_TextInfo": 5,
     "DebugReflector_ImgInfo": 5,
+    // Window
     "Window": 4,
+    // Sprite
     "Sprite_Picture": 3,
     "Sprite_Character": 2,
     "Sprite_Actor": 2,
     "Sprite_Enemy": 2,
-    "Sprite": 1,
     "Spriteset": 0,
     "Sprite_Battleback": 0,
+    "Sprite_MouseCursor": -100,
+    // 必须放在最后，否则到他就不再继续往后搜索了
+    "Sprite": 1,
 };
 // 判断点击对象的优先级，越大优先级越高
 var DebugReflector_GetPriority = function (object) {
@@ -325,38 +331,46 @@ var DebugReflector_DoDebugCheck = function (object, offset) {
             let check = true
             // 决定本轮选择会选中谁
             if (DebugReflector_HoverObject) {
-                let LastBounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(DebugReflector_HoverObject));
-                let Bounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(object));
-                // 检查是否将对方完全覆盖
-                if (Bounds.minX <= LastBounds.minX &&
-                    Bounds.minY <= LastBounds.minY &&
-                    Bounds.maxX >= LastBounds.maxX &&
-                    Bounds.maxY >= LastBounds.maxY) {
-                    // 将对方完全包围
+                const Priority = DebugReflector_GetPriority(object)
+                // 特殊标记的不被选择
+                if (Priority == -100) {
                     check = false
                 }
                 else {
-                    // 检查优先级
-                    const LastPriority = DebugReflector_GetPriority(DebugReflector_HoverObject)
-                    const Priority = DebugReflector_GetPriority(object)
-                    // 优先级高
-                    if (Priority > LastPriority) {
-                        // 但是对方是自己的child
-                        if (DebugReflector_IfChild(DebugReflector_HoverObject, object)) {
-                            check = false
-                        }
+                    let LastBounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(DebugReflector_HoverObject));
+                    let Bounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(object));
+                    // 检查是否将对方完全覆盖
+                    if (Bounds.minX <= LastBounds.minX &&
+                        Bounds.minY <= LastBounds.minY &&
+                        Bounds.maxX >= LastBounds.maxX &&
+                        Bounds.maxY >= LastBounds.maxY)
+                    {
+                        // 将对方完全包围
+                        check = false
                     }
-                    // 优先级低或相等
                     else {
-                        // 自己不是对方的child
-                        if (!DebugReflector_IfChild(object, DebugReflector_HoverObject)) {
-                            // 检查是否被对方完全覆盖
-                            if (LastBounds.minX > Bounds.minX ||
-                                LastBounds.minY > Bounds.minY ||
-                                LastBounds.maxX < Bounds.maxX ||
-                                LastBounds.maxY < Bounds.maxY) {
-                                // 没有被对方完全包围
+                        // 检查优先级
+                        const LastPriority = DebugReflector_GetPriority(DebugReflector_HoverObject)
+
+                        // 优先级高
+                        if (Priority > LastPriority) {
+                            // 但是对方是自己的child
+                            if (DebugReflector_IfChild(DebugReflector_HoverObject, object)) {
                                 check = false
+                            }
+                        }
+                        // 优先级低或相等
+                        else {
+                            // 自己不是对方的child
+                            if (!DebugReflector_IfChild(object, DebugReflector_HoverObject)) {
+                                // 检查是否被对方完全覆盖
+                                if (LastBounds.minX > Bounds.minX ||
+                                    LastBounds.minY > Bounds.minY ||
+                                    LastBounds.maxX < Bounds.maxX ||
+                                    LastBounds.maxY < Bounds.maxY) {
+                                    // 没有被对方完全包围
+                                    check = false
+                                }
                             }
                         }
                     }
@@ -408,7 +422,7 @@ function DebugReflector_TextInfo() {
     this.initialize(...arguments);
 }
 
-DebugReflector_TextInfo.prototype.initialize = function (bitmap, text, x, y, maxWidth, lineHeight, align, fontSize) {
+DebugReflector_TextInfo.prototype.initialize = function (bitmap, text, x, y, maxWidth, lineHeight, align) {
     this.text = text
     this.x = x
     this.y = y
@@ -567,11 +581,15 @@ Bitmap.prototype.clear = function () {
     this.imgInfos = []
 }
 
-Bitmap.prototype.update = function () {
-    this.textInfos.forEach((item, index, arr) => {
+Bitmap.update = function (bitmap) {
+    if (!bitmap) return
+    if (!("textInfos" in bitmap)) return
+    if (!("imgInfos" in bitmap)) return
+
+    bitmap.textInfos.forEach((item, index, arr) => {
         item.update()
     })
-    this.imgInfos.forEach((item, index, arr) => {
+    bitmap.imgInfos.forEach((item, index, arr) => {
         item.update()
     })
 }
@@ -579,6 +597,15 @@ Bitmap.prototype.update = function () {
 // ============================================================================= //
 // 添加监控
 // ============================================================================= //
+
+var DebugReflector_Sprite_initialize = Sprite.prototype.initialize;
+Sprite.prototype.initialize = function (bitmap) {
+    DebugReflector_Sprite_initialize.call(this, bitmap);
+
+    if (this._bitmap) {
+        this._bitmap.outer = this
+    }
+};
 
 var DebugReflector_Sprite_update = Sprite.prototype.update;
 Sprite.prototype.update = function () {
@@ -595,6 +622,10 @@ Sprite.prototype.update = function () {
     }
     else {
         DebugReflector_ExitHover(this);
+    }
+
+    if (this._bitmap) {
+        Bitmap.update(this._bitmap)
     }
 }
 
@@ -621,7 +652,9 @@ var DebugReflector_Window_Base_createContents = Window_Base.prototype.createCont
 Window_Base.prototype.createContents = function () {
     DebugReflector_Window_Base_createContents.call(this);
 
-    this.contents.outer = this
+    if (this.contents) {
+        this.contents.outer = this
+    }
 };
 
 var DebugReflector_Window_Base_update = Window_Base.prototype.update;
@@ -641,7 +674,9 @@ Window_Base.prototype.update = function () {
         DebugReflector_ExitHover(this);
     }
 
-    this.contents.update()
+    if (this.contents) {
+        Bitmap.update(this.contents)
+    }
 }
 
 Window_Base.prototype.canReflectorSelect = function () {
@@ -669,6 +704,10 @@ Scene_Base.prototype.update = function () {
         else {
             console.log("清除选择的图片文件名限制")
         }
+    }
+    if (Input.isTriggered("ESC")) {
+        DebugReflector_ExitHover(null);
+        DebugReflector_ExitClick(null);
     }
 }
 
