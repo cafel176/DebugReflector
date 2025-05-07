@@ -449,10 +449,6 @@ DebugReflector_TextInfo.prototype.update = function () {
     else {
         DebugReflector_ExitHover(this);
     }
-
-    if (this.bitmap && this.bitmap.outer) {
-        this._hidden = this.bitmap.outer._hidden
-    }
 }
 
 DebugReflector_TextInfo.prototype.canReflectorSelect = function () {
@@ -559,7 +555,15 @@ Bitmap.prototype.blt = function (source, sx, sy, sw, sh, dx, dy, dw, dh) {
 var DebugReflector_Bitmap_clear = Bitmap.prototype.clear;
 Bitmap.prototype.clear = function () {
     DebugReflector_Bitmap_clear.call(this)
+    this.textInfos.forEach((item, index, arr) => {
+        DebugReflector_ExitHover(item);
+        DebugReflector_ExitClick(item);
+    })
     this.textInfos = []
+    this.imgInfos.forEach((item, index, arr) => {
+        DebugReflector_ExitHover(item);
+        DebugReflector_ExitClick(item);
+    })
     this.imgInfos = []
 }
 
