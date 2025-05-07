@@ -61,6 +61,7 @@ DebugReflector.param = PluginManager.parameters('DebugReflector');
 
 // 调试按键
 Input.keyMapper[114] = "reflector";
+Input.keyMapper[115] = "filter";
 
 // ============================================================================= //
 // MV和MZ的兼容
@@ -322,36 +323,42 @@ var DebugReflector_DoDebugCheck = function (object, offset) {
     if (DebugReflector_CheckTouched(DebugReflector_GetBounds(object))) {
         if (TouchInput.isHovered()) {
             let check = true
-            // 根据优先级决定本轮选择会选中谁
+            // 决定本轮选择会选中谁
             if (DebugReflector_HoverObject) {
-                // 检查优先级
-                const LastPriority = DebugReflector_GetPriority(DebugReflector_HoverObject)
-                const Priority = DebugReflector_GetPriority(object)
-                // 同类，检查同类之间彼此遮挡的情况
-                if (Priority === LastPriority) {
-                    let LastBounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(DebugReflector_HoverObject));
-                    let Bounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(object));
-                    // 检查是否将对方完全覆盖
-                    if (Bounds.minX <= LastBounds.minX &&
-                        Bounds.minY <= LastBounds.minY &&
-                        Bounds.maxX >= LastBounds.maxX &&
-                        Bounds.maxY >= LastBounds.maxY) {
-                        // 将对方完全包围
-                        check = false
-                    }
+                let LastBounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(DebugReflector_HoverObject));
+                let Bounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(object));
+                // 检查是否将对方完全覆盖
+                if (Bounds.minX <= LastBounds.minX &&
+                    Bounds.minY <= LastBounds.minY &&
+                    Bounds.maxX >= LastBounds.maxX &&
+                    Bounds.maxY >= LastBounds.maxY) {
+                    // 将对方完全包围
+                    check = false
                 }
-                // 优先级高
-                else if (Priority > LastPriority) {
-                    // 但是对方是自己的child
-                    if (DebugReflector_IfChild(DebugReflector_HoverObject, object)) {
-                        check = false
-                    }
-                }
-                // 优先级低
                 else {
-                    // 自己不是对方的child
-                    if (!DebugReflector_IfChild(object, DebugReflector_HoverObject)) {
-                        check = false
+                    // 检查优先级
+                    const LastPriority = DebugReflector_GetPriority(DebugReflector_HoverObject)
+                    const Priority = DebugReflector_GetPriority(object)
+                    // 优先级高
+                    if (Priority > LastPriority) {
+                        // 但是对方是自己的child
+                        if (DebugReflector_IfChild(DebugReflector_HoverObject, object)) {
+                            check = false
+                        }
+                    }
+                    // 优先级低或相等
+                    else {
+                        // 自己不是对方的child
+                        if (!DebugReflector_IfChild(object, DebugReflector_HoverObject)) {
+                            // 检查是否被对方完全覆盖
+                            if (LastBounds.minX > Bounds.minX ||
+                                LastBounds.minY > Bounds.minY ||
+                                LastBounds.maxX < Bounds.maxX ||
+                                LastBounds.maxY < Bounds.maxY) {
+                                // 没有被对方完全包围
+                                check = false
+                            }
+                        }
                     }
                 }
             }
@@ -587,9 +594,18 @@ Sprite.prototype.update = function () {
     }
 }
 
+var DebugReflector_Hover_Sprite_Filter = "";
 Sprite.prototype.canReflectorSelect = function () {
     if (this._hidden) {
         return false
+    }
+    if (DebugReflector_Hover_Sprite_Filter !== "") {
+        if (this._bitmap && this._bitmap._image) {
+            return this._bitmap._image.src.includes(DebugReflector_Hover_Sprite_Filter)
+        }
+        else {
+            return false
+        }
     }
     if (this.parent && (typeof (this.parent.canReflectorSelect) != "undefined")) {
         return this.parent.canReflectorSelect()
@@ -632,6 +648,24 @@ Window_Base.prototype.canReflectorSelect = function () {
         return this.parent.canReflectorSelect()
     }
     return true
+}
+
+var DebugReflector_Scene_Base_update = Scene_Base.prototype.update;
+Scene_Base.prototype.update = function () {
+    DebugReflector_Scene_Base_update.call(this);
+
+    if (Input.isTriggered("filter")) {
+        DebugReflector_Hover_Sprite_Filter = prompt("请输入想选择的图片文件名，空为不做任何限制", "");
+        if (DebugReflector_Hover_Sprite_Filter === null) {
+            DebugReflector_Hover_Sprite_Filter = ""
+        }
+        if (DebugReflector_Hover_Sprite_Filter !== "") {
+            console.log("选择的图片文件名包含：" + DebugReflector_Hover_Sprite_Filter)
+        }
+        else {
+            console.log("清除选择的图片文件名限制")
+        }
+    }
 }
 
 // ============================================================================= //
