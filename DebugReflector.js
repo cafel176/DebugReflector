@@ -63,8 +63,83 @@ DebugReflector.param = PluginManager.parameters('DebugReflector');
 Input.keyMapper[114] = "reflector";
 
 // ============================================================================= //
+// MV和MZ的兼容
+// ============================================================================= //
+if (Utils.RPGMAKER_NAME === 'MV') {
+    TouchInput.isHovered = function () {
+        return this.current_hovered
+    }
+
+    var DebugReflector_TouchInput_clear = TouchInput.clear
+    TouchInput.clear = function () {
+        DebugReflector_TouchInput_clear.call(this)
+        this.current_hovered = false;
+        this.new_hovered = false;
+    };
+
+    var DebugReflector_TouchInput_update = TouchInput.update
+    TouchInput.update = function () {
+        DebugReflector_TouchInput_update.call(this)
+        this.current_hovered = this.new_hovered
+        this.new_hovered = false
+    };
+
+    var DebugReflector_TouchInput_onMouseMove = TouchInput._onMouseMove
+    TouchInput._onMouseMove = function (event) {
+        DebugReflector_TouchInput_onMouseMove.call(this, event)
+
+        var x = Graphics.pageToCanvasX(event.pageX);
+        var y = Graphics.pageToCanvasY(event.pageY);
+        if (!this._mousePressed && Graphics.isInsideCanvas(x, y)) {
+            this._onHover(x, y);
+        }
+    }
+
+    TouchInput._onHover = function (x, y) {
+        this.new_hovered = true;
+        this._x = x;
+        this._y = y;
+    }
+
+    var DebugReflector_Container_calculateBounds = PIXI.Container.prototype.calculateBounds;
+    PIXI.Container.prototype.calculateBounds = function calculateBounds() {
+        for (var i = 0; i < this.children.length; i++) {
+            var child = this.children[i];
+
+            if (!child.visible || !child.renderable) {
+                continue;
+            }
+
+            if (!child._bounds) {
+                child._bounds = new PIXI.Bounds();
+            }
+        }
+
+        DebugReflector_Container_calculateBounds.call(this)
+    }
+}
+// ============================================================================= //
 // 公共函数库
 // ============================================================================= //
+
+// MV和MZ的兼容
+var DebugReflector_GetBounds = function (object) {
+    if (!object) {
+        bounds = new PIXI.Bounds();
+        bounds.minX = 0;
+        bounds.minY = 0;
+        bounds.maxX = 0;
+        bounds.maxY = 0;
+        return bounds;
+    }
+    if (Utils.RPGMAKER_NAME === 'MV') {
+        if (!object._bounds) {
+            object._bounds = new PIXI.Bounds();
+        }
+        object.calculateBounds()
+    }
+    return object._bounds
+}
 
 // 限制bounds不要超出可见范围
 var DebugReflector_LimitBounds = function (bounds) {
@@ -109,9 +184,9 @@ var DebugReflector_GetPriority = function (object) {
 }
 
 // 检查鼠标是否在对象范围内
-var DebugReflector_CheckTouched = function (_bounds) {
+var DebugReflector_CheckTouched = function (inbounds) {
     const touchPos = new Point(TouchInput.x, TouchInput.y);
-    const bounds = DebugReflector_LimitBounds(_bounds);
+    const bounds = DebugReflector_LimitBounds(inbounds);
     return (bounds.minX <= touchPos.x && bounds.maxX >= touchPos.x &&
         bounds.minY <= touchPos.y && bounds.maxY >= touchPos.y);
 }
@@ -121,7 +196,7 @@ var DebugReflector_ClearClickGraphics = function () {
     if (!SceneManager._scene) return;
 
     if (('click_graphics' in SceneManager._scene) && SceneManager._scene.click_graphics) {
-        if (SceneManager._scene.click_graphics._geometry) {
+        if (SceneManager._scene.click_graphics._geometry || Utils.RPGMAKER_NAME === 'MV') {
             SceneManager._scene.click_graphics.clear();
         }
     }
@@ -132,7 +207,7 @@ var DebugReflector_ClearHoverGraphics = function () {
     if (!SceneManager._scene) return;
 
     if (('hover_graphics' in SceneManager._scene) && SceneManager._scene.hover_graphics) {
-        if (SceneManager._scene.hover_graphics._geometry) {
+        if (SceneManager._scene.hover_graphics._geometry || Utils.RPGMAKER_NAME === 'MV') {
             SceneManager._scene.hover_graphics.clear();
         }
     }
@@ -147,12 +222,14 @@ var DebugReflector_DrawClickLines = function (object, offset, color) {
         SceneManager._scene.click_graphics = new PIXI.Graphics();
         SceneManager._scene.addChild(SceneManager._scene.click_graphics);
         SceneManager._scene.click_graphics.position.set(0, 0);
-        if (!SceneManager._scene.click_graphics._lineStyle) {
-            SceneManager._scene.click_graphics._lineStyle = new LineStyle();
+        if (Utils.RPGMAKER_NAME === 'MZ') {
+            if (!SceneManager._scene.click_graphics._lineStyle) {
+                SceneManager._scene.click_graphics._lineStyle = new PIXI.LineStyle();
+            }
         }
     }
 
-    let DrawBounds = DebugReflector_LimitBounds(object._bounds);
+    let DrawBounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(object));
     DrawBounds.minX += offset;
     DrawBounds.minY += offset;
     DrawBounds.maxX -= offset;
@@ -177,12 +254,15 @@ var DebugReflector_DrawHoverLines = function (object, offset, color) {
         SceneManager._scene.hover_graphics = new PIXI.Graphics();
         SceneManager._scene.addChild(SceneManager._scene.hover_graphics);
         SceneManager._scene.hover_graphics.position.set(0, 0);
-        if (!SceneManager._scene.hover_graphics._lineStyle) {
-            SceneManager._scene.hover_graphics._lineStyle = new LineStyle();
+        if (Utils.RPGMAKER_NAME === 'MZ')
+        {
+            if (!SceneManager._scene.hover_graphics._lineStyle) {
+                SceneManager._scene.hover_graphics._lineStyle = new PIXI.LineStyle();
+            }
         }
     }
 
-    let DrawBounds = DebugReflector_LimitBounds(object._bounds);
+    let DrawBounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(object));
     DrawBounds.minX += offset;
     DrawBounds.minY += offset;
     DrawBounds.maxX -= offset;
@@ -239,7 +319,7 @@ var DebugReflector_LastClickTime = 0;
 var DebugReflector_DoDebugCheck = function (object, offset) {
     if (!object) return;
 
-    if (DebugReflector_CheckTouched(object._bounds)) {
+    if (DebugReflector_CheckTouched(DebugReflector_GetBounds(object))) {
         if (TouchInput.isHovered()) {
             let check = true
             // 根据优先级决定本轮选择会选中谁
@@ -249,8 +329,8 @@ var DebugReflector_DoDebugCheck = function (object, offset) {
                 const Priority = DebugReflector_GetPriority(object)
                 // 同类，检查同类之间彼此遮挡的情况
                 if (Priority === LastPriority) {
-                    let LastBounds = DebugReflector_LimitBounds(DebugReflector_HoverObject._bounds);
-                    let Bounds = DebugReflector_LimitBounds(object._bounds);
+                    let LastBounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(DebugReflector_HoverObject));
+                    let Bounds = DebugReflector_LimitBounds(DebugReflector_GetBounds(object));
                     // 检查是否将对方完全覆盖
                     if (Bounds.minX <= LastBounds.minX &&
                         Bounds.minY <= LastBounds.minY &&
@@ -336,8 +416,8 @@ DebugReflector_TextInfo.prototype.initialize = function (bitmap, text, x, y, max
     this.stack = err.stack;
 }
 
-DebugReflector_TextInfo.prototype.update = function () {
-    if (this.bitmap && this.bitmap.outer && this.bitmap.outer._bounds) {
+DebugReflector_TextInfo.prototype.calculateBounds = function () {
+    if (this.bitmap && this.bitmap.outer && DebugReflector_GetBounds(this.bitmap.outer)) {
         let padding = (("padding" in this.bitmap.outer) ? this.bitmap.outer.padding : 0)
 
         this._bounds.minX = this.x + this.bitmap.outer._bounds.minX + padding;
@@ -345,13 +425,34 @@ DebugReflector_TextInfo.prototype.update = function () {
         this._bounds.maxX = this._bounds.minX + this.maxWidth;
         this._bounds.maxY = this._bounds.minY + this.lineHeight;
     }
+}
+
+DebugReflector_TextInfo.prototype.update = function () {
+    this.calculateBounds()
 
     if (DebugReflector_IsReflectorEnabled()) {
-        DebugReflector_DoDebugCheck(this, 0);
+        if (this.canReflectorSelect()) {
+            DebugReflector_DoDebugCheck(this, 0);
+        }
+        else {
+            DebugReflector_ExitHover(this);
+            DebugReflector_ExitClick(this);
+        }
     }
     else {
         DebugReflector_ExitHover(this);
     }
+
+    if (this.bitmap && this.bitmap.outer) {
+        this._hidden = this.bitmap.outer._hidden
+    }
+}
+
+DebugReflector_TextInfo.prototype.canReflectorSelect = function () {
+    if (this.bitmap && this.bitmap.outer && (typeof (this.bitmap.outer.canReflectorSelect) != "undefined")) {
+        return this.bitmap.outer.canReflectorSelect()
+    }
+    return true
 }
 
 // 记录blt信息
@@ -377,8 +478,8 @@ DebugReflector_ImgInfo.prototype.initialize = function (bitmap, source, sx, sy, 
     this.stack = err.stack;
 }
 
-DebugReflector_ImgInfo.prototype.update = function () {
-    if (this.bitmap && this.bitmap.outer && this.bitmap.outer._bounds) {
+DebugReflector_ImgInfo.prototype.calculateBounds = function () {
+    if (this.bitmap && this.bitmap.outer && DebugReflector_GetBounds(this.bitmap.outer)) {
         let padding = (("padding" in this.bitmap.outer) ? this.bitmap.outer.padding : 0)
 
         this._bounds.minX = this.dx + this.bitmap.outer._bounds.minX + padding;
@@ -386,13 +487,30 @@ DebugReflector_ImgInfo.prototype.update = function () {
         this._bounds.maxX = this._bounds.minX + this.dw;
         this._bounds.maxY = this._bounds.minY + this.dh;
     }
+}
+
+DebugReflector_ImgInfo.prototype.update = function () {
+    this.calculateBounds()
 
     if (DebugReflector_IsReflectorEnabled()) {
-        DebugReflector_DoDebugCheck(this, 0);
+        if (this.canReflectorSelect()) {
+            DebugReflector_DoDebugCheck(this, 0);
+        }
+        else {
+            DebugReflector_ExitHover(this);
+            DebugReflector_ExitClick(this);
+        }
     }
     else {
         DebugReflector_ExitHover(this);
     }
+}
+
+DebugReflector_ImgInfo.prototype.canReflectorSelect = function () {
+    if (this.bitmap && this.bitmap.outer && (typeof (this.bitmap.outer.canReflectorSelect) != "undefined")) {
+        return this.bitmap.outer.canReflectorSelect()
+    }
+    return true
 }
 
 // ============================================================================= //
@@ -456,7 +574,7 @@ Sprite.prototype.update = function () {
     DebugReflector_Sprite_update.call(this);
 
     if (DebugReflector_IsReflectorEnabled()) {
-        if (!this._hidden) {
+        if (this.canReflectorSelect()) {
             DebugReflector_DoDebugCheck(this, 0);
         }
         else {
@@ -467,6 +585,16 @@ Sprite.prototype.update = function () {
     else {
         DebugReflector_ExitHover(this);
     }
+}
+
+Sprite.prototype.canReflectorSelect = function () {
+    if (this._hidden) {
+        return false
+    }
+    if (this.parent && (typeof (this.parent.canReflectorSelect) != "undefined")) {
+        return this.parent.canReflectorSelect()
+    }
+    return true
 }
 
 var DebugReflector_Window_Base_createContents = Window_Base.prototype.createContents;
@@ -481,7 +609,7 @@ Window_Base.prototype.update = function () {
     DebugReflector_Window_Base_update.call(this);
 
     if (DebugReflector_IsReflectorEnabled()) {
-        if (this.isOpen() && this.visible) {
+        if (this.canReflectorSelect()) {
             DebugReflector_DoDebugCheck(this, 0);
         }
         else {
@@ -494,6 +622,16 @@ Window_Base.prototype.update = function () {
     }
 
     this.contents.update()
+}
+
+Window_Base.prototype.canReflectorSelect = function () {
+    if (!this.isOpen() || !this.visible) {
+        return false
+    }
+    if (this.parent && (typeof (this.parent.canReflectorSelect) != "undefined")) {
+        return this.parent.canReflectorSelect()
+    }
+    return true
 }
 
 // ============================================================================= //
