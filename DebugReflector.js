@@ -439,12 +439,18 @@ DebugReflector_TextInfo.prototype.initialize = function (bitmap, text, x, y, max
 
 DebugReflector_TextInfo.prototype.calculateBounds = function () {
     if (this.bitmap && this.bitmap.outer && DebugReflector_GetBounds(this.bitmap.outer)) {
-        let padding = (("padding" in this.bitmap.outer) ? this.bitmap.outer.padding : 0)
+        const padding = (("padding" in this.bitmap.outer) ? this.bitmap.outer.padding : 0)
+        const TextWidth = this.bitmap.measureTextWidth(this.text);
+        // outlineWidth是描边粗细
+        const minX = ((this.align === "center") ? this.x + this.maxWidth / 2 - TextWidth / 2 : ((this.align === "right") ? this.x + this.maxWidth - TextWidth : this.x)) + this.bitmap.outer._bounds.minX + padding - this.bitmap.outlineWidth
+        // lineHeight是行间距
+        const maxY = Math.round(this.y + this.lineHeight / 2 + this.bitmap.fontSize / 2) + this.bitmap.outer._bounds.minY + padding
 
-        this._bounds.minX = this.x + this.bitmap.outer._bounds.minX + padding;
-        this._bounds.minY = this.y + this.bitmap.outer._bounds.minY + padding;
-        this._bounds.maxX = this._bounds.minX + this.maxWidth;
-        this._bounds.maxY = this._bounds.minY + this.lineHeight;
+        this._bounds.minX = minX
+        this._bounds.maxX = this._bounds.minX + TextWidth + this.bitmap.outlineWidth * 2
+
+        this._bounds.maxY = maxY + this.bitmap.outlineWidth
+        this._bounds.minY = this._bounds.maxY - this.bitmap.fontSize - this.bitmap.outlineWidth * 2
     }
 }
 
