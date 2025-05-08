@@ -433,21 +433,32 @@ DebugReflector_TextInfo.prototype.initialize = function (bitmap, text, x, y, max
 DebugReflector_TextInfo.prototype.calculateBounds = function () {
     if (this.bitmap && this.bitmap.outer && DebugReflector_GetBounds(this.bitmap.outer)) {
         const padding = (("padding" in this.bitmap.outer) ? this.bitmap.outer.padding : 0)
-        const TextWidth = this.bitmap.measureTextWidth(this.text);
-        // outlineWidth是描边粗细
-        const minX = ((this.align === "center") ? this.x + this.maxWidth / 2 - TextWidth / 2 : ((this.align === "right") ? this.x + this.maxWidth - TextWidth : this.x)) + this.bitmap.outer._bounds.minX + padding - this.bitmap.outlineWidth
+
+        // 处理某些使用了scale的插件
+        const TextScale = 1 / this.bitmap.outer.scale.x
+        // 文本实际占用的宽度
+        const TextWidth = this.bitmap.measureTextWidth(this.text) / TextScale;
+        // 文本最大占用宽度
+        const maxWidth = this.maxWidth / TextScale
         // lineHeight是行间距
-        const maxY = Math.round(this.y + this.lineHeight / 2 + this.bitmap.fontSize / 2) + this.bitmap.outer._bounds.minY + padding
+        const lineHeight = this.lineHeight / TextScale
+        // outlineWidth是描边粗细
+        const outlineWidth = this.bitmap.outlineWidth / TextScale
+        // 字体大小
+        const fontSize = this.bitmap.fontSize / TextScale
+
+        const minX = ((this.align === "center") ? this.x + maxWidth / 2 - TextWidth / 2 : ((this.align === "right") ? this.x + maxWidth - TextWidth : this.x)) + this.bitmap.outer._bounds.minX + padding - outlineWidth
+        const minX_all = this.x + this.bitmap.outer._bounds.minX + padding - outlineWidth
+        const maxY = Math.round(this.y + lineHeight / 2 + fontSize / 2) + this.bitmap.outer._bounds.minY + padding
 
         this._bounds.minX = minX
-        this._bounds.maxX = this._bounds.minX + TextWidth + this.bitmap.outlineWidth * 2
+        this._bounds.maxX = this._bounds.minX + TextWidth + outlineWidth * 2
 
-        const minX_all = this.x + this.bitmap.outer._bounds.minX + padding - this.bitmap.outlineWidth
         this._bounds.minX_all = minX_all
-        this._bounds.maxX_all = this._bounds.minX_all + this.maxWidth + this.bitmap.outlineWidth * 2
+        this._bounds.maxX_all = this._bounds.minX_all + maxWidth + outlineWidth * 2
 
-        this._bounds.maxY = maxY + this.bitmap.outlineWidth
-        this._bounds.minY = this._bounds.maxY - this.bitmap.fontSize - this.bitmap.outlineWidth * 2
+        this._bounds.maxY = maxY + outlineWidth
+        this._bounds.minY = this._bounds.maxY - fontSize - outlineWidth * 2
     }
 }
 
