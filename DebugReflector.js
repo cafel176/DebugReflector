@@ -3,13 +3,13 @@
 // ============================================================================= //
 
 /*:
- * @plugindesc 当前版本 V2
- * 运行时事件调试插件，适用于RMMV和RMMZ
+ * @plugindesc 当前版本 V1
+ * 调试反射器插件，适用于RMMZ和RMMV
  * @author cafel
  * @target MZ
- * @url https://github.com/cafel176/RuntimeEventDebug_RMMV_RMMZ
+ * @url https://github.com/cafel176/DebugReflector
  * @help QQ群：792888538 欢迎反馈遇到的问题和希望支持的功能
- * 视频教程：https://www.bilibili.com/video/BV1YURqYMETS/?spm_id_from=333.337.search-card.all.click&vd_source=1f5e08d6a2e054c354714c7090aed591
+ * 视频教程：
  * 
  * @param ShowMousePos
  * @text 显示鼠标坐标
@@ -28,7 +28,9 @@ let ShowMousePos = (DebugReflector.param["ShowMousePos"] === "true")
 
 // 调试按键
 Input.keyMapper[27] = "ESC";
+// F3
 Input.keyMapper[114] = "reflector";
+// F4
 Input.keyMapper[115] = "filter";
 
 // ============================================================================= //
@@ -124,6 +126,7 @@ var DebugReflector_LimitBounds = function (bounds) {
         bounds.minY = Math.max(bounds.minY, 0);
         bounds.maxX = Math.min(bounds.maxX, Graphics.width);
         bounds.maxY = Math.min(bounds.maxY, Graphics.height);
+        // 处理文本最大宽度的绘制
         if ("minX_all" in bounds) {
             bounds.minX_all = Math.max(bounds.minX_all, 0);
         }
@@ -147,7 +150,7 @@ const DebugReflector_Priority = {
     "Sprite_Enemy": 2,
     "Spriteset": 0,
     "Sprite_Battleback": 0,
-    "Sprite_MouseCursor": -100,
+    "Sprite_MouseCursor": -100,// 鼠标指针给个特殊值
     // 必须放在最后，否则到他就不再继续往后搜索了
     "Sprite": 1,
 };
@@ -218,6 +221,7 @@ var DebugReflector_DrawClickLines = function (object, offset, color) {
     const thickness = 5
     DebugReflector_ClearClickGraphics();
 
+    // 处理文本最大宽度的绘制
     if ("minX_all" in DrawBounds) {
         SceneManager._scene.click_graphics.lineStyle(thickness, 0x7eaaff)
             .moveTo(DrawBounds.minX_all, DrawBounds.minY)
@@ -261,6 +265,7 @@ var DebugReflector_DrawHoverLines = function (object, offset, color) {
     const thickness = 4
     DebugReflector_ClearHoverGraphics();
 
+    // 处理文本最大宽度的绘制
     if ("minX_all" in DrawBounds) {
         SceneManager._scene.hover_graphics.lineStyle(thickness, 0x7eaaff)
             .moveTo(DrawBounds.minX_all, DrawBounds.minY)
@@ -648,6 +653,8 @@ Sprite.prototype.canReflectorSelect = function () {
     if (this._hidden) {
         return false
     }
+
+    // 图片选择限制优先
     if (DebugReflector_Hover_Sprite_Filter !== "") {
         if (this._bitmap && this._bitmap._image) {
             return this._bitmap._image.src.includes(DebugReflector_Hover_Sprite_Filter)
@@ -656,6 +663,7 @@ Sprite.prototype.canReflectorSelect = function () {
             return false
         }
     }
+
     if (this.parent && (typeof (this.parent.canReflectorSelect) != "undefined")) {
         return this.parent.canReflectorSelect()
     }
@@ -694,6 +702,7 @@ Window_Base.prototype.update = function () {
 }
 
 Window_Base.prototype.canReflectorSelect = function () {
+    // 某些多窗口scene中，有些窗口没有active但也应该被选中，故这里不判断active
     if (!this.isOpen() || !this.visible) {
         return false
     }
@@ -707,6 +716,7 @@ var DebugReflector_Scene_Base_update = Scene_Base.prototype.update;
 Scene_Base.prototype.update = function () {
     DebugReflector_Scene_Base_update.call(this);
 
+    // 图片选择限制
     if (Input.isTriggered("filter")) {
         DebugReflector_Hover_Sprite_Filter = prompt("请输入想选择的图片文件名，空为不做任何限制", "");
         if (DebugReflector_Hover_Sprite_Filter === null) {
@@ -719,10 +729,14 @@ Scene_Base.prototype.update = function () {
             console.log("清除选择的图片文件名限制")
         }
     }
+
+    // 按下ESC清除当前选择以处理偶尔系统选择卡死
     if (Input.isTriggered("ESC")) {
         DebugReflector_ExitHover(null);
         DebugReflector_ExitClick(null);
     }
+
+    // 实时绘制鼠标位置
     if (ShowMousePos && SceneManager._scene === this) {
         if (('text_sprite' in this) && this.text_sprite) {
             this.text_sprite.bitmap.clear()
