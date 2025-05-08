@@ -1,56 +1,6 @@
 ﻿// ============================================================================= //
 // DebugReflector.js
 // ============================================================================= //
-/*:
- * @plugindesc 当前版本 V2
- * 运行时事件调试插件，适用于RMMZ和RMMV
- * @author cafel
- * @target MZ
- * @url https://github.com/cafel176/RuntimeEventDebug
- * @help QQ群：792888538  
- * Project1：https://rpg.blue/thread-497192-1-1.html
- * 视频教程：https://www.bilibili.com/video/BV1YURqYMETS/?spm_id_from=333.337.search-card.all.click&vd_source=1f5e08d6a2e054c354714c7090aed591
- * 
- * ★ 本插件提供如下支持：
- * 
- * 1. 支持通过注释在事件列表中添加断点，运行时执行到断点注释会触发存档面板以供
- *    记录
- *    ♦ 使用方式：添加注释并写入“断点#任意字符”即可
- *      此处的任意字符要保证每个事件内的所有事件页都不重复
- *    ♦ 例如：事件A内3个事件页，则事件页1用了断点#001，其他断点都不能再用，当前
- *      事件页和事件页2、3内的所有其他断点都不能再用001
- *      但是另外一个事件B则无此限制，每个事件是彼此独立的
- * 
- * 2. 支持运行时在任意时间打开读档界面，快捷键F10
- * 
- * 3. 支持运行时对事件进行调试编辑，当在注释断点处保存游戏后，再次读档会识别上
- *    次保存的注释断点位置，并将最新的修改直接应用到该位置
- *    ♦ 注意：本功能仅限通过注释断点保存的存档，其他插件或普通的存档事件无法
- *      触发
- * 
- * ★ 结合各种功能后，对于一个长流程事件演出的调试工作流如下：
- *    ♦ 在事件列表中要检查的位置之前加入注释断点
- *    ♦ 开始游戏，进入事件测试
- *    ♦ 触发断点，保存
- *    ♦ 执行事件，检查效果是否满意
- *    ♦ 如效果未达预期，直接在编辑器中对事件进行修改
- *    ♦ 此时注意，一定要保存工程！！！
- *    ♦ F10读档，再次进行事件测试，如仍不满意，重复上述流程
- *    ♦ 如效果达到预期，则可以退出游戏
- * 
- * ★ 注意：本插件完全用于开发调试，开发完成后进入部署阶段时，请将本插件
- *    关闭避免影响到游戏流程
- * 
- * @param 断点方式
- * @type select
- * @option 仅注释处
- * @value 仅注释处
- * @option 禁用
- * @value 禁用
- * @desc 断点触发存档界面的方式
- * @default 仅注释处
- * 
- */
 
 var DebugReflector = DebugReflector || {};
 DebugReflector.param = PluginManager.parameters('DebugReflector');
@@ -744,6 +694,48 @@ Scene_Base.prototype.update = function () {
     if (Input.isTriggered("ESC")) {
         DebugReflector_ExitHover(null);
         DebugReflector_ExitClick(null);
+    }
+    if (SceneManager._scene === this) {
+        if (('text_sprite' in this) && this.text_sprite) {
+            this.text_sprite.bitmap.clear()
+        }
+        if (DebugReflector_IsReflectorEnabled()) {
+            if (!('text_sprite' in this) || !this.text_sprite) {
+                this.text_sprite = new Sprite(new Bitmap(this.width, this.height));
+                this.text_sprite.bitmap.fontSize = 20;
+                this.text_sprite.bitmap.fontFace = $gameSystem.mainFontFace();
+                this.text_sprite.bitmap.textColor = ColorManager.normalColor();
+                this.text_sprite.bitmap.outlineColor = ColorManager.outlineColor();
+                this.text_sprite.x = this.x;
+                this.text_sprite.y = this.y;
+                this.addChild(this.text_sprite);
+            }
+
+            const touchPos = new Point(TouchInput.x, TouchInput.y);
+            const MouseHint = "(" + TouchInput.x + ", " + TouchInput.y + ")"
+            const TextWidth = this.text_sprite.bitmap.measureTextWidth(MouseHint)
+
+            let minX = TouchInput.x + 15
+            if (minX < 0) {
+                minX = 0
+            }
+            let maxX = minX + TextWidth
+            if (maxX > Graphics.width) {
+                maxX = Graphics.width
+                minX = maxX - TextWidth
+            }
+            let minY = TouchInput.y + 15
+            if (minY < 0) {
+                minY = 0
+            }
+            let maxY = minY + this.text_sprite.bitmap.fontSize
+            if (maxY > Graphics.height) {
+                maxY = Graphics.height
+                minY = maxY - this.text_sprite.bitmap.fontSize
+            }
+
+            this.text_sprite.bitmap.drawText(MouseHint, minX, minY, TextWidth, this.text_sprite.bitmap.fontSize, "center");
+        }
     }
 }
 
