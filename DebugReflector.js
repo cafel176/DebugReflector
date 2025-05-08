@@ -2,8 +2,25 @@
 // DebugReflector.js
 // ============================================================================= //
 
+/*:
+ * @plugindesc 当前版本 V2
+ * 运行时事件调试插件，适用于RMMV和RMMZ
+ * @author cafel
+ * @target MZ
+ * @url https://github.com/cafel176/RuntimeEventDebug_RMMV_RMMZ
+ * @help QQ群：792888538 欢迎反馈遇到的问题和希望支持的功能
+ * 视频教程：https://www.bilibili.com/video/BV1YURqYMETS/?spm_id_from=333.337.search-card.all.click&vd_source=1f5e08d6a2e054c354714c7090aed591
+ * 
+ * @param ShowMousePos
+ * @text 显示鼠标坐标
+ * @desc 实时显示鼠标当前位置坐标
+ * @default false
+ * @type boolean
+*/
+
 var DebugReflector = DebugReflector || {};
 DebugReflector.param = PluginManager.parameters('DebugReflector');
+let ShowMousePos = (DebugReflector.param["ShowMousePos"] === "true")
 
 // ============================================================================= //
 // 插件按键
@@ -695,7 +712,7 @@ Scene_Base.prototype.update = function () {
         DebugReflector_ExitHover(null);
         DebugReflector_ExitClick(null);
     }
-    if (SceneManager._scene === this) {
+    if (ShowMousePos && SceneManager._scene === this) {
         if (('text_sprite' in this) && this.text_sprite) {
             this.text_sprite.bitmap.clear()
         }
@@ -703,9 +720,11 @@ Scene_Base.prototype.update = function () {
             if (!('text_sprite' in this) || !this.text_sprite) {
                 this.text_sprite = new Sprite(new Bitmap(this.width, this.height));
                 this.text_sprite.bitmap.fontSize = 20;
-                this.text_sprite.bitmap.fontFace = $gameSystem.mainFontFace();
-                this.text_sprite.bitmap.textColor = ColorManager.normalColor();
-                this.text_sprite.bitmap.outlineColor = ColorManager.outlineColor();
+                if (Utils.RPGMAKER_NAME === 'MZ') {
+                    this.text_sprite.bitmap.fontFace = $gameSystem.mainFontFace();
+                    this.text_sprite.bitmap.textColor = ColorManager.normalColor();
+                    this.text_sprite.bitmap.outlineColor = ColorManager.outlineColor();
+                }
                 this.text_sprite.x = this.x;
                 this.text_sprite.y = this.y;
                 this.addChild(this.text_sprite);
