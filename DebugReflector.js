@@ -157,6 +157,12 @@ var DebugReflector_LimitBounds = function (bounds) {
         bounds.minY = Math.max(bounds.minY, 0);
         bounds.maxX = Math.min(bounds.maxX, Graphics.width);
         bounds.maxY = Math.min(bounds.maxY, Graphics.height);
+        if ("minX_all" in bounds) {
+            bounds.minX_all = Math.max(bounds.minX_all, 0);
+        }
+        if ("maxX_all" in bounds) {
+            bounds.maxX_all = Math.min(bounds.maxX_all, Graphics.width);
+        }
     }
     return bounds;
 }
@@ -244,6 +250,16 @@ var DebugReflector_DrawClickLines = function (object, offset, color) {
 
     const thickness = 5
     DebugReflector_ClearClickGraphics();
+
+    if ("minX_all" in DrawBounds) {
+        SceneManager._scene.click_graphics.lineStyle(thickness, 0x7eaaff)
+            .moveTo(DrawBounds.minX_all, DrawBounds.minY)
+            .lineTo(DrawBounds.maxX_all, DrawBounds.minY)
+            .lineTo(DrawBounds.maxX_all, DrawBounds.maxY)
+            .lineTo(DrawBounds.minX_all, DrawBounds.maxY)
+            .lineTo(DrawBounds.minX_all, DrawBounds.minY);
+    }
+
     SceneManager._scene.click_graphics.lineStyle(thickness, color)
         .moveTo(DrawBounds.minX, DrawBounds.minY)
         .lineTo(DrawBounds.maxX, DrawBounds.minY)
@@ -277,6 +293,16 @@ var DebugReflector_DrawHoverLines = function (object, offset, color) {
 
     const thickness = 4
     DebugReflector_ClearHoverGraphics();
+
+    if ("minX_all" in DrawBounds) {
+        SceneManager._scene.hover_graphics.lineStyle(thickness, 0x7eaaff)
+            .moveTo(DrawBounds.minX_all, DrawBounds.minY)
+            .lineTo(DrawBounds.maxX_all, DrawBounds.minY)
+            .lineTo(DrawBounds.maxX_all, DrawBounds.maxY)
+            .lineTo(DrawBounds.minX_all, DrawBounds.maxY)
+            .lineTo(DrawBounds.minX_all, DrawBounds.minY);
+    }
+
     SceneManager._scene.hover_graphics.lineStyle(thickness, color)
         .moveTo(DrawBounds.minX, DrawBounds.minY)
         .lineTo(DrawBounds.maxX, DrawBounds.minY)
@@ -448,6 +474,10 @@ DebugReflector_TextInfo.prototype.calculateBounds = function () {
 
         this._bounds.minX = minX
         this._bounds.maxX = this._bounds.minX + TextWidth + this.bitmap.outlineWidth * 2
+
+        const minX_all = this.x + this.bitmap.outer._bounds.minX + padding - this.bitmap.outlineWidth
+        this._bounds.minX_all = minX_all
+        this._bounds.maxX_all = this._bounds.minX_all + this.maxWidth + this.bitmap.outlineWidth * 2
 
         this._bounds.maxY = maxY + this.bitmap.outlineWidth
         this._bounds.minY = this._bounds.maxY - this.bitmap.fontSize - this.bitmap.outlineWidth * 2
