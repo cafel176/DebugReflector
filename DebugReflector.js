@@ -9,7 +9,33 @@
  * @target MZ
  * @url https://github.com/cafel176/DebugReflector
  * @help QQ群：792888538 欢迎反馈遇到的问题和希望支持的功能
+ * Project1：
  * 视频教程：
+ * 
+ * ★ 本插件提供如下支持：
+ * 
+ * 1. 按住F3可以选择查看任意视图组件的实际范围，包括UI，文本，图片，事件，角色等
+ *    鼠标移动到其范围内即可出现黄色提示框
+ *    ♦ 文本会额外显示蓝色提示框以表示文本最大宽度的范围
+ *    ♦ 有时出现按住F3也不显示提示框的情况，可以按下ESC将之重置即可
+ * 
+ * 2. 显示黄色提示框时，鼠标点击它即可将之选中，提示框变为红色且不按F3时也不消失
+ *    同时会在控制台输出选中物体的信息以及其创建时的调用堆栈
+ *    ♦ 点选的物体会赋值给变量DebugReflector_ClickObject，可以通过脚本对其做任意处理
+ * 
+ * 3. 多个Sprite彼此重叠，范围相同的情况，想要选中特定的某个，可以按下F2使用限制器
+ *    ♦ 在限制器窗口输入Sprite当前显示图片的图片名即可，如果输入空则表示无限制
+ * 
+ * 4. 支持实时显示鼠标当前窗口坐标，通过参数开关控制
+ *    ♦ 部分插件可能与此功能冲突，会导致按下F3后地图黑屏，不要打开参数开关即可
+ * 
+ * 
+ * ★ 本插件可以用于快速查看UI效果范围以实时调整，同时通过调用堆栈追溯文本
+ *    和图片的坐标，帮助用户快速进行UI上的开发和调试
+ * 
+ * 
+ * ★ 注意：本插件完全用于开发调试，开发完成后进入部署阶段时，请将本插件
+ *    关闭避免影响到游戏流程
  * 
  * @param ShowMousePos
  * @text 显示鼠标坐标
@@ -20,7 +46,12 @@
 
 var DebugReflector = DebugReflector || {};
 DebugReflector.param = PluginManager.parameters('DebugReflector');
-let ShowMousePos = (DebugReflector.param["ShowMousePos"] === "true")
+
+// ============================================================================= //
+// 插件参数
+// ============================================================================= //
+
+const ShowMousePos = (DebugReflector.param["ShowMousePos"] === "true")
 
 // ============================================================================= //
 // 插件按键
@@ -30,8 +61,8 @@ let ShowMousePos = (DebugReflector.param["ShowMousePos"] === "true")
 Input.keyMapper[27] = "ESC";
 // F3
 Input.keyMapper[114] = "reflector";
-// F4
-Input.keyMapper[115] = "filter";
+// F2
+Input.keyMapper[113] = "filter";
 
 // ============================================================================= //
 // MV和MZ的兼容
@@ -718,15 +749,16 @@ Scene_Base.prototype.update = function () {
 
     // 图片选择限制
     if (Input.isTriggered("filter")) {
-        DebugReflector_Hover_Sprite_Filter = prompt("请输入想选择的图片文件名，空为不做任何限制", "");
-        if (DebugReflector_Hover_Sprite_Filter === null) {
-            DebugReflector_Hover_Sprite_Filter = ""
-        }
-        if (DebugReflector_Hover_Sprite_Filter !== "") {
-            console.log("选择的图片文件名包含：" + DebugReflector_Hover_Sprite_Filter)
-        }
-        else {
-            console.log("清除选择的图片文件名限制")
+        let re = prompt("请输入想选择的图片文件名，空为不做任何限制", DebugReflector_Hover_Sprite_Filter);
+        // null是取消的情况
+        if (re !== null) {
+            DebugReflector_Hover_Sprite_Filter = re
+            if (DebugReflector_Hover_Sprite_Filter !== "") {
+                console.log("选择的图片文件名包含：" + DebugReflector_Hover_Sprite_Filter)
+            }
+            else {
+                console.log("清除选择的图片文件名限制")
+            }
         }
     }
 
