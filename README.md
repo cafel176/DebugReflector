@@ -1,2 +1,68 @@
 # DebugReflector
-调试反射器插件，适用于RM全系列
+
+调试反射器插件
+
+——***以创作者为本，让RM没有难做的演出***
+
+<br/>
+
+适用于RMMZ、RMMV、RMVA、RMVX <br/>
+
+暂不支持RMXP<br/>
+
+QQ群：***792888538***   欢迎反馈遇到的问题和希望支持的功能
+
+<br/>
+
+VA/VX 视频教程(必看)：
+
+<br/>
+
+VA/VX Project1：
+
+<br/>
+
+MZ/MV 视频教程(必看)：
+
+<br/>
+
+MZ/MV Project1：
+
+<br/>
+
+> [!IMPORTANT] 
+> 注意：本工具完全用于开发调试，开发完成后进入部署阶段时，请将插件关闭避免影响到游戏流程<br/>
+
+<br/>
+
+## 插件功能：
+
+1. 按住***F6***可以选择查看任意视图组件的实际范围，包括UI，文本，图片，事件，角色等，鼠标移动到其范围内即可出现黄色提示框
+   * 文本会额外显示蓝色提示框以表示文本最大宽度的范围
+   * 有时出现按住 ***F6*** 也不显示提示框的情况，可以按下 ***ESC*** (VA/VX是***W***) 将之重置即可
+   
+![范围查看](https://github.com/cafel176/DebugReflector/blob/main/pic1.png?raw=true '范围查看')
+![范围查看](https://github.com/cafel176/DebugReflector/blob/main/pic2.png?raw=true '范围查看')
+
+<br/>
+
+2. 显示黄色提示框时，鼠标点击它即可将之选中，提示框变为红色且不按***F6*** 时也不消失，同时会在控制台输出选中物体的信息以及其创建时的调用堆栈
+   * 点选的物体会赋值给变量 ***DebugReflector_ClickObject***，可以通过脚本对其做任意处理
+   
+![信息查看](https://github.com/cafel176/DebugReflector/blob/main/pic3.png?raw=true '信息查看')
+![信息查看](https://github.com/cafel176/DebugReflector/blob/main/pic4.png?raw=true '信息查看')
+
+<br/>
+
+3. 多个Sprite彼此重叠，范围相同的情况，想要选中特定的某个，可以按下 ***F7*** 使用限制器 (VA/VX暂不支持此功能)
+   * 在限制器窗口输入Sprite当前显示图片的图片名即可，如果输入空则表示无限制
+ 
+![图片限制](https://github.com/cafel176/DebugReflector/blob/main/pic5.png?raw=true '图片限制')
+
+4. 支持实时显示鼠标当前窗口坐标，通过参数开关控制
+
+![坐标查看](https://github.com/cafel176/DebugReflector/blob/main/pic6.png?raw=true '坐标查看')
+
+<br/>
+
+## 使用案例：
