@@ -37,14 +37,16 @@ MZ/MV Project1：
 
 ## 可参考使用案例：
 
-1. 通过直接查看文本位置和追溯堆栈排查多插件环境下适配阿拉伯语时出现的文本位置混乱
-测试工程来源：BLACK BOX LSS  作者：Fif老师
+1. 通过直接查看文本位置和追溯堆栈排查多插件环境下适配阿拉伯语时出现的文本位置混乱<br/>
+测试工程来源：BLACK BOX LSS  作者：Fif老师<br/>
 欢迎大家关注：https://afdian.com/a/blackboxFiF
    
 ![案例1](https://github.com/cafel176/DebugReflector/blob/main/example1.png?raw=true '案例1')
 
-2. 通过直接查看菜单项位置和范围排查纯图片菜单下鼠标点击位置检测不准的问题
-测试工程来源：Heart Knots 心结之种  作者：星羽樱老师
+<br/>
+
+2. 通过直接查看菜单项位置和范围排查纯图片菜单下鼠标点击位置检测不准的问题<br/>
+测试工程来源：Heart Knots 心结之种  作者：星羽樱老师<br/>
 欢迎大家关注：https://weibo.com/u/3552393304?tabtype=feed
 
 ![案例1](https://github.com/cafel176/DebugReflector/blob/main/example2.png?raw=true '案例1')
