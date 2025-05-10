@@ -14,20 +14,20 @@
  * 
  * ★ 本插件提供如下支持：
  * 
- * 1. 按住F3可以选择查看任意视图组件的实际范围，包括UI，文本，图片，事件，角色等
+ * 1. 按住F6可以选择查看任意视图组件的实际范围，包括UI，文本，图片，事件，角色等
  *    鼠标移动到其范围内即可出现黄色提示框
  *    ♦ 文本会额外显示蓝色提示框以表示文本最大宽度的范围
- *    ♦ 有时出现按住F3也不显示提示框的情况，可以按下ESC将之重置即可
+ *    ♦ 有时出现按住F6也不显示提示框的情况，可以按下ESC将之重置即可
  * 
- * 2. 显示黄色提示框时，鼠标点击它即可将之选中，提示框变为红色且不按F3时也不消失
+ * 2. 显示黄色提示框时，鼠标点击它即可将之选中，提示框变为红色且不按F6时也不消失
  *    同时会在控制台输出选中物体的信息以及其创建时的调用堆栈
  *    ♦ 点选的物体会赋值给变量DebugReflector_ClickObject，可以通过脚本对其做任意处理
  * 
- * 3. 多个Sprite彼此重叠，范围相同的情况，想要选中特定的某个，可以按下F2使用限制器
+ * 3. 多个Sprite彼此重叠，范围相同的情况，想要选中特定的某个，可以按下F7使用限制器
  *    ♦ 在限制器窗口输入Sprite当前显示图片的图片名即可，如果输入空则表示无限制
  * 
  * 4. 支持实时显示鼠标当前窗口坐标，通过参数开关控制
- *    ♦ 部分插件可能与此功能冲突，会导致按下F3后地图黑屏，不要打开参数开关即可
+ *    ♦ 部分插件可能与此功能冲突，会导致按下F6后地图黑屏，不要打开参数开关即可
  * 
  * 
  * ★ 本插件可以用于快速查看UI效果范围以实时调整，同时通过调用堆栈追溯文本
@@ -37,10 +37,10 @@
  * ★ 注意：本插件完全用于开发调试，开发完成后进入部署阶段时，请将本插件
  *    关闭避免影响到游戏流程
  * 
- * @param ShowMousePos
+ * @param DebugReflector_ShowMousePos
  * @text 显示鼠标坐标
  * @desc 实时显示鼠标当前位置坐标
- * @default false
+ * @default true
  * @type boolean
 */
 
@@ -51,7 +51,7 @@ DebugReflector.param = PluginManager.parameters('DebugReflector');
 // 插件参数
 // ============================================================================= //
 
-const ShowMousePos = (DebugReflector.param["ShowMousePos"] === "true")
+const DebugReflector_ShowMousePos = (DebugReflector.param["DebugReflector_ShowMousePos"] === "true")
 
 // ============================================================================= //
 // 插件按键
@@ -59,10 +59,10 @@ const ShowMousePos = (DebugReflector.param["ShowMousePos"] === "true")
 
 // 调试按键
 Input.keyMapper[27] = "ESC";
-// F3
-Input.keyMapper[114] = "reflector";
-// F2
-Input.keyMapper[113] = "filter";
+// F6
+Input.keyMapper[117] = "reflector";
+// F7
+Input.keyMapper[118] = "filter";
 
 // ============================================================================= //
 // MV和MZ的兼容
@@ -743,6 +743,8 @@ Window_Base.prototype.canReflectorSelect = function () {
     return true
 }
 
+var DebugReflector_LastDrawMouseTime = 0;
+
 var DebugReflector_Scene_Base_update = Scene_Base.prototype.update;
 Scene_Base.prototype.update = function () {
     DebugReflector_Scene_Base_update.call(this);
@@ -769,48 +771,54 @@ Scene_Base.prototype.update = function () {
     }
 
     // 实时绘制鼠标位置
-    if (ShowMousePos && SceneManager._scene === this) {
-        if (('text_sprite' in this) && this.text_sprite) {
-            this.text_sprite.bitmap.clear()
-        }
-        if (DebugReflector_IsReflectorEnabled()) {
-            if (!('text_sprite' in this) || !this.text_sprite) {
-                this.text_sprite = new Sprite(new Bitmap(this.width, this.height));
-                this.text_sprite.bitmap.fontSize = 20;
-                if (Utils.RPGMAKER_NAME === 'MZ') {
-                    this.text_sprite.bitmap.fontFace = $gameSystem.mainFontFace();
-                    this.text_sprite.bitmap.textColor = ColorManager.normalColor();
-                    this.text_sprite.bitmap.outlineColor = ColorManager.outlineColor();
+    if (DebugReflector_ShowMousePos && SceneManager._scene === this) {
+        // 避免过短时间内的反复触发
+        let ClickTime = new Date().getTime() / 1000;
+        if (ClickTime - DebugReflector_LastDrawMouseTime > 0.03) {
+            DebugReflector_LastDrawMouseTime = ClickTime;
+
+            if (('DebugReflector_text_sprite' in this) && this.DebugReflector_text_sprite && this.DebugReflector_text_sprite.bitmap) {
+                this.DebugReflector_text_sprite.bitmap.clear()
+            }
+            if (DebugReflector_IsReflectorEnabled()) {
+                if (!('DebugReflector_text_sprite' in this) || !this.DebugReflector_text_sprite) {
+                    // 这里Scene_Map的width和height太大了导致出现警告无法绘制，需要限制
+                    this.DebugReflector_text_sprite = new Sprite(new Bitmap(Math.min(this.width, Graphics.width), Math.min(this.height, Graphics.height)));
+                    this.DebugReflector_text_sprite.bitmap.fontSize = 20;
+                    if (Utils.RPGMAKER_NAME === 'MZ') {
+                        this.DebugReflector_text_sprite.bitmap.fontFace = $gameSystem.mainFontFace();
+                        this.DebugReflector_text_sprite.bitmap.textColor = ColorManager.normalColor();
+                        this.DebugReflector_text_sprite.bitmap.outlineColor = ColorManager.outlineColor();
+                    }
+                    this.DebugReflector_text_sprite.x = this.x;
+                    this.DebugReflector_text_sprite.y = this.y;
+                    this.addChild(this.DebugReflector_text_sprite);
                 }
-                this.text_sprite.x = this.x;
-                this.text_sprite.y = this.y;
-                this.addChild(this.text_sprite);
-            }
 
-            const touchPos = new Point(TouchInput.x, TouchInput.y);
-            const MouseHint = "(" + TouchInput.x + ", " + TouchInput.y + ")"
-            const TextWidth = this.text_sprite.bitmap.measureTextWidth(MouseHint)
+                const MouseHint = "(" + TouchInput.x + ", " + TouchInput.y + ")"
+                const TextWidth = this.DebugReflector_text_sprite.bitmap.measureTextWidth(MouseHint)
 
-            let minX = TouchInput.x + 15
-            if (minX < 0) {
-                minX = 0
-            }
-            let maxX = minX + TextWidth
-            if (maxX > Graphics.width) {
-                maxX = Graphics.width
-                minX = maxX - TextWidth
-            }
-            let minY = TouchInput.y + 15
-            if (minY < 0) {
-                minY = 0
-            }
-            let maxY = minY + this.text_sprite.bitmap.fontSize
-            if (maxY > Graphics.height) {
-                maxY = Graphics.height
-                minY = maxY - this.text_sprite.bitmap.fontSize
-            }
+                let minX = TouchInput.x + 15
+                if (minX < 0) {
+                    minX = 0
+                }
+                let maxX = minX + TextWidth
+                if (maxX > Graphics.width) {
+                    maxX = Graphics.width
+                    minX = maxX - TextWidth
+                }
+                let minY = TouchInput.y + 15
+                if (minY < 0) {
+                    minY = 0
+                }
+                let maxY = minY + this.DebugReflector_text_sprite.bitmap.fontSize
+                if (maxY > Graphics.height) {
+                    maxY = Graphics.height
+                    minY = maxY - this.DebugReflector_text_sprite.bitmap.fontSize
+                }
 
-            this.text_sprite.bitmap.drawText(MouseHint, minX, minY, TextWidth, this.text_sprite.bitmap.fontSize, "center");
+                this.DebugReflector_text_sprite.bitmap.drawText(MouseHint, minX, minY, TextWidth, this.DebugReflector_text_sprite.bitmap.fontSize, "center");
+            }
         }
     }
 }
