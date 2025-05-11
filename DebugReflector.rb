@@ -7,8 +7,8 @@
 # 作者： cafel
 # QQ群：792888538
 # github地址：https://github.com/cafel176/DebugReflector
-# Project1：
-# 视频教程：
+# 视频教程：https://www.bilibili.com/video/BV1qKVZzrEWW
+# Project1：https://rpg.blue/thread-497376-1-1.html
 # 
 # ★ 本插件提供如下支持：
 # 
@@ -46,6 +46,7 @@ $debug_reflector_active = true
 # 实时绘制鼠标位置
 $debug_reflector_show_mouse_pos = true
 
+if !defined? $console
 # 文本最大范围提示颜色
 $debug_reflector_hover_color_all = Color.new(126, 170, 255)
 
@@ -54,10 +55,18 @@ $debug_reflector_hover_color = Color.new(255, 255, 26)
 
 # click提示颜色
 $debug_reflector_click_color = Color.new(255, 26, 26)
-
+end
 # ============================================================================= 
 # Windows API 函数
 # ============================================================================= 
+
+if defined? $console
+  class Win32API
+    def initialize(a, b, c, d)
+      return nil
+    end
+  end
+end
 
 $DebugReflector_GetWindowThreadProcessId = Win32API.new("user32", "GetWindowThreadProcessId", "LP", "L")
 $DebugReflector_GetWindow = Win32API.new("user32", "GetWindow", "LL", "L")
@@ -77,6 +86,7 @@ $DebugReflector_GetAsyncKeyState = Win32API.new('user32','GetAsyncKeyState', ['p
 # ============================================================================= 
 # 内置类修改
 # ============================================================================= 
+if !defined? $console
 
 class Bitmap
   attr_accessor :outer
@@ -214,6 +224,7 @@ class Bitmap
   end
 end
 
+end
 # ============================================================================= 
 # 新增类
 # ============================================================================= 
@@ -479,7 +490,7 @@ module DebugUtils
             puts $DebugReflector_ClickObject.debug_reflector_stack
             puts "# ======================================="
 
-            if $debug_reflector_rm_version != "VA" && defined? DebugMessage
+            if defined? DebugMessage
               DebugMessage.Log($DebugReflector_ClickObject.inspect)
               DebugMessage.Log(" ")
               DebugMessage.Log($DebugReflector_ClickObject.debug_reflector_stack)
@@ -527,17 +538,18 @@ module DebugWindow
   end
 end
 
+if !defined? $console
 if $debug_reflector_rm_version != "XP"
   $debug_reflector_Graphics_height = Graphics.height
   $debug_reflector_Graphics_width = Graphics.width
 else
-
 end
 
 # 绘制提示用
 $debug_reflector_click_graphics = Bitmap.new($debug_reflector_Graphics_width, $debug_reflector_Graphics_height)
 $debug_reflector_hover_graphics = Bitmap.new($debug_reflector_Graphics_width, $debug_reflector_Graphics_height)
 $debug_reflector_mouse_graphics = Bitmap.new($debug_reflector_Graphics_width, $debug_reflector_Graphics_height)
+end
 
 # 鼠标点击事件用
 $debug_reflector_mouse_left_clicked = false
@@ -787,6 +799,7 @@ end
 # 添加监控
 # ============================================================================= //
 
+if !defined? $console
 class Sprite
   attr_accessor :debug_reflector_parent
   attr_accessor :debug_reflector_stack
@@ -843,6 +856,7 @@ class Sprite
   def padding
     return 0
   end
+end
 end
 
 class Window_Base
@@ -1028,6 +1042,8 @@ end
 # ============================================================================= //
 # 鼠标监控
 # ============================================================================= //
+if !defined? $console
+
 class << Graphics
   alias debug_reflector_origin_update update
   def update
@@ -1038,4 +1054,6 @@ class << Graphics
     # 时刻监听鼠标点击
     $debug_reflector_mouse_left_clicked = ($DebugReflector_GetAsyncKeyState.call(0x01) != 0)
   end
+end
+
 end

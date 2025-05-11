@@ -1,32 +1,36 @@
 # DebugReflector
 
-调试反射器插件
+调试反射器插件，灵感来源于Unreal的控件反射器
 
 ——***以创作者为本，让RM没有难做的演出***
 
 <br/>
 
-适用于RMMZ、RMMV、RMVA、RMVX <br/>
+适用于RMMZ、RMMV、RMVA、RMVX，暂不支持RMXP <br/>
 
-暂不支持RMXP<br/>
+<br/>
+
+支持查看任意视图组件的范围，信息和创建堆栈；支持包括UI，文本，图片，事件，角色等，方便快速进行UI调试和获取地图事件
+
+<br/>
 
 QQ群：***792888538***   欢迎反馈遇到的问题和希望支持的功能
 
 <br/>
 
-VA/VX 视频教程(必看)：
+MZ/MV 视频教程：https://www.bilibili.com/video/BV17MVZzgELW
 
 <br/>
 
-VA/VX Project1：
+MZ/MV Project1：https://rpg.blue/forum.php?mod=viewthread&tid=497375#lastpost
 
 <br/>
 
-MZ/MV 视频教程(必看)：
+VA/VX 视频教程：https://www.bilibili.com/video/BV1qKVZzrEWW
 
 <br/>
 
-MZ/MV Project1：
+VA/VX Project1：https://rpg.blue/thread-497376-1-1.html
 
 <br/>
 

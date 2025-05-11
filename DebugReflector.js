@@ -9,8 +9,8 @@
  * @target MZ
  * @url https://github.com/cafel176/DebugReflector
  * @help QQ群：792888538 欢迎反馈遇到的问题和希望支持的功能
- * Project1：
- * 视频教程：
+ * 视频教程：https://www.bilibili.com/video/BV17MVZzgELW
+ * Project1：https://rpg.blue/forum.php?mod=viewthread&tid=497375#lastpost
  * 
  * ★ 本插件提供如下支持：
  * 
